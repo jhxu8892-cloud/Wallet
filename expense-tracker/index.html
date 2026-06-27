@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallet — Rastreador de Gastos</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --border: #2a2e38;
+    --text: #e8eaf0;
+    --muted: #8b92a3;
+    --green: #4ade80;
+    --red: #f87171;
+    --accent: #6366f1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .app { width: 100%; max-width: 480px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .balance-card {
+    background: linear-gradient(135deg, #1e2230, #15171f);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .balance-label { color: var(--muted); font-size: 13px; }
+  .balance-amount { font-size: 36px; font-weight: 700; margin: 6px 0 16px; }
+  .summary-row { display: flex; justify-content: space-around; }
+  .summary-item { text-align: center; }
+  .summary-item .lbl { font-size: 12px; color: var(--muted); }
+  .summary-item .val { font-size: 16px; font-weight: 600; }
+  .income .val { color: var(--green); }
+  .expense .val { color: var(--red); }
+
+  form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  form input, form select {
+    background: #11131a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  form input:focus, form select:focus { border-color: var(--accent); }
+  .desc-field { grid-column: 1 / -1; }
+  .type-toggle { grid-column: 1 / -1; display: flex; gap: 8px; }
+  .type-toggle button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #11131a;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all .15s;
+  }
+  .type-toggle button.active.income-btn { background: rgba(74,222,128,.15); color: var(--green); border-color: var(--green); }
+  .type-toggle button.active.expense-btn { background: rgba(248,113,113,.15); color: var(--red); border-color: var(--red); }
+  .add-btn {
+    grid-column: 1 / -1;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: #5457d4; }
+
+  .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .list-header h2 { font-size: 14px; color: var(--muted); margin: 0; }
+  .clear-btn { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; }
+
+  .tx-list { display: flex; flex-direction: column; gap: 8px; }
+  .tx-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tx-left { display: flex; flex-direction: column; }
+  .tx-desc { font-size: 14px; }
+  .tx-meta { font-size: 11px; color: var(--muted); }
+  .tx-amount { font-size: 15px; font-weight: 600; }
+  .tx-amount.income { color: var(--green); }
+  .tx-amount.expense { color: var(--red); }
+  .tx-del {
+    margin-left: 10px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .tx-del:hover { color: var(--red); }
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>💰 Wallet</h1>
+  <div class="subtitle">Tu rastreador de gastos personal</div>
+
+  <div class="balance-card">
+    <div class="balance-label">Balance total</div>
+    <div class="balance-amount" id="balance">$0.00</div>
+    <div class="summary-row">
+      <div class="summary-item income">
+        <div class="lbl">Ingresos</div>
+        <div class="val" id="totalIncome">$0.00</div>
+      </div>
+      <div class="summary-item expense">
+        <div class="lbl">Gastos</div>
+        <div class="val" id="totalExpense">$0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <form id="txForm">
+    <div class="type-toggle">
+      <button type="button" id="incomeBtn" class="income-btn active">+ Ingreso</button>
+      <button type="button" id="expenseBtn" class="expense-btn">− Gasto</button>
+    </div>
+    <input class="desc-field" type="text" id="desc" placeholder="Descripción" required>
+    <input type="number" id="amount" placeholder="Monto" step="0.01" min="0.01" required>
+    <select id="category">
+      <option>Comida</option>
+      <option>Transporte</option>
+      <option>Vivienda</option>
+      <option>Ocio</option>
+      <option>Salario</option>
+      <option>Otro</option>
+    </select>
+    <button type="submit" class="add-btn">Agregar</button>
+  </form>
+
+  <div class="list-header">
+    <h2>Transacciones</h2>
+    <button class="clear-btn" id="clearAll">Borrar todo</button>
+  </div>
+  <div class="tx-list" id="txList"></div>
+</div>
+
+<script>
+let transactions = JSON.parse(localStorage.getItem('wallet_tx') || '[]');
+let currentType = 'income';
+
+const incomeBtn = document.getElementById('incomeBtn');
+const expenseBtn = document.getElementById('expenseBtn');
+const form = document.getElementById('txForm');
+const txList = document.getElementById('txList');
+
+incomeBtn.addEventListener('click', () => setType('income'));
+expenseBtn.addEventListener('click', () => setType('expense'));
+
+function setType(type) {
+  currentType = type;
+  incomeBtn.classList.toggle('active', type === 'income');
+  expenseBtn.classList.toggle('active', type === 'expense');
+}
+
+function save() {
+  localStorage.setItem('wallet_tx', JSON.stringify(transactions));
+}
+
+function formatMoney(n) {
+  return '$' + n.toFixed(2);
+}
+
+function render() {
+  let income = 0, expense = 0;
+  txList.innerHTML = '';
+
+  if (transactions.length === 0) {
+    txList.innerHTML = '<div class="empty">Sin transacciones todavía. ¡Agrega una!</div>';
+  }
+
+  [...transactions].reverse().forEach(tx => {
+    if (tx.type === 'income') income += tx.amount;
+    else expense += tx.amount;
+
+    const item = document.createElement('div');
+    item.className = 'tx-item';
+    item.innerHTML = `
+      <div class="tx-left">
+        <span class="tx-desc">${escapeHtml(tx.desc)}</span>
+        <span class="tx-meta">${tx.category} · ${tx.date}</span>
+      </div>
+      <div style="display:flex; align-items:center;">
+        <span class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '−'}${formatMoney(tx.amount)}</span>
+        <button class="tx-del" data-id="${tx.id}">✕</button>
+      </div>
+    `;
+    txList.appendChild(item);
+  });
+
+  document.getElementById('totalIncome').textContent = formatMoney(income);
+  document.getElementById('totalExpense').textContent = formatMoney(expense);
+  document.getElementById('balance').textContent = formatMoney(income - expense);
+
+  document.querySelectorAll('.tx-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      transactions = transactions.filter(t => t.id !== Number(btn.dataset.id));
+      save();
+      render();
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const desc = document.getElementById('desc').value.trim();
+  const amount = parseFloat(document.getElementById('amount').value);
+  const category = document.getElementById('category').value;
+  if (!desc || !amount || amount <= 0) return;
+
+  transactions.push({
+    id: Date.now(),
+    desc,
+    amount,
+    category,
+    type: currentType,
+    date: new Date().toLocaleDateString()
+  });
+  save();
+  render();
+  form.reset();
+  setType(currentType);
+});
+
+document.getElementById('clearAll').addEventListener('click', () => {
+  if (transactions.length === 0) return;
+  if (confirm('¿Borrar todas las transacciones?')) {
+    transactions = [];
+    save();
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
