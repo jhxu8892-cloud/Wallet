@@ -219,7 +219,7 @@ function render() {
       </div>
       <div style="display:flex; align-items:center;">
         <span class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '−'}${formatMoney(tx.amount)}</span>
-        <button class="tx-del" data-id="${tx.id}">✕</button>
+        <button class="tx-del" data-id="${tx.id}" aria-label="Eliminar transacción">✕</button>
       </div>
     `;
     txList.appendChild(item);
