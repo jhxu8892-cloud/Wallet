@@ -1,0 +1,380 @@
+<title>Mi Libro Mágico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+/* Layout: biblioteca de documentos a la izquierda, zona de preguntas o quiz a la derecha; una columna en móvil. */
+:root{
+  --bg:#fdf8ec; --surface:#ffffff; --ink:#1d2a44; --muted:#5d6985; --line:#e6dcc3;
+  --accent:#2f5bea; --accent-ink:#ffffff; --sun:#ffc533; --good:#1f9d63; --good-bg:#dff5e9;
+  --bad:#d6453d; --bad-bg:#fde4e1; --soft:#eef2ff;
+  --font-display:'Fredoka','Trebuchet MS',system-ui,sans-serif;
+  --font-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141b2e; --surface:#1d2740; --ink:#f1f3fa; --muted:#a3adc9; --line:#33405f;
+  --accent:#7d9cff; --accent-ink:#0f1730; --sun:#ffc533; --good:#4cd391; --good-bg:#183a2e;
+  --bad:#ff7d74; --bad-bg:#44201f; --soft:#26335a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141b2e; --surface:#1d2740; --ink:#f1f3fa; --muted:#a3adc9; --line:#33405f;
+  --accent:#7d9cff; --accent-ink:#0f1730; --sun:#ffc533; --good:#4cd391; --good-bg:#183a2e;
+  --bad:#ff7d74; --bad-bg:#44201f; --soft:#26335a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.5;padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:52px;height:52px;border-radius:14px;background:var(--sun);display:grid;place-items:center;font-size:30px;transform:rotate(-6deg)}
+h1{font-family:var(--font-display);font-size:2rem;line-height:1.1;margin:0;text-wrap:balance}
+header p{margin:0;color:var(--muted);font-size:.95rem}
+h2{font-family:var(--font-display);font-size:1.25rem;margin:0 0 10px;font-weight:600}
+.grid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:18px;min-width:0}
+.drop{border:3px dashed var(--accent);border-radius:16px;padding:18px 12px;text-align:center;background:var(--soft);cursor:pointer;display:block}
+.drop.over{background:var(--sun);border-color:var(--ink)}
+.drop strong{font-family:var(--font-display);font-size:1.05rem;display:block}
+.drop span{color:var(--muted);font-size:.9rem}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:focus-within{outline:3px solid var(--ink);outline-offset:2px}
+.docs{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.doc{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg);border:1.5px solid var(--line);min-width:0}
+.doc label{flex:1;min-width:0;display:flex;gap:10px;align-items:center;cursor:pointer}
+.doc .name{font-weight:700;overflow-wrap:anywhere;line-height:1.25}
+.doc .meta{display:block;font-size:.8rem;color:var(--muted);font-weight:400}
+.doc input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.x{border:0;background:transparent;color:var(--muted);font-size:1.3rem;cursor:pointer;border-radius:8px;width:34px;height:34px;flex:none}
+.x:hover{background:var(--bad-bg);color:var(--bad)}
+.note{font-size:.85rem;color:var(--muted);margin:10px 0 0}
+.status{font-size:.9rem;min-height:1.3em;margin:10px 0 0;color:var(--muted)}
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tab{font-family:var(--font-display);font-size:1.05rem;border:2px solid var(--line);background:var(--bg);color:var(--ink);padding:9px 18px;border-radius:999px;cursor:pointer}
+.tab[aria-selected=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,.tab:focus-visible,select:focus-visible,textarea:focus-visible,.opt:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row label{font-weight:700;font-size:.9rem;color:var(--muted)}
+select{font:inherit;padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.btn{font-family:var(--font-display);font-size:1.05rem;font-weight:600;border:0;background:var(--accent);color:var(--accent-ink);padding:11px 22px;border-radius:14px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.alt{background:var(--sun);color:#1d2a44}
+.chat{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.msg{padding:12px 16px;border-radius:16px;max-width:92%;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--soft);border-bottom-left-radius:4px}
+.msg.bot small{display:block;margin-top:8px;color:var(--muted);font-size:.8rem}
+.ask{display:flex;gap:10px;flex-wrap:wrap}
+textarea{flex:1;min-width:200px;font:inherit;padding:12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical;min-height:52px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{font:inherit;font-size:.9rem;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;color:var(--muted);font-weight:700;font-size:.9rem}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-bottom:16px}
+.bar i{display:block;height:100%;background:var(--sun);transition:width .3s}
+.q{font-family:var(--font-display);font-size:1.4rem;line-height:1.25;margin:0 0 14px;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{text-align:left;font:inherit;font-weight:700;border:2.5px solid var(--line);background:var(--bg);color:var(--ink);padding:12px 16px;border-radius:14px;cursor:pointer;display:flex;gap:12px;align-items:center}
+.opt b{width:30px;height:30px;border-radius:50%;background:var(--soft);display:grid;place-items:center;flex:none;font-family:var(--font-display)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.good{background:var(--good-bg);border-color:var(--good)}
+.opt.bad{background:var(--bad-bg);border-color:var(--bad)}
+.opt:disabled{cursor:default;color:var(--ink)}
+.fb{margin-top:14px;padding:12px 16px;border-radius:14px;background:var(--soft)}
+.fb strong{font-family:var(--font-display);font-size:1.1rem;display:block}
+.result{text-align:center;padding:10px 0}
+.stars{font-size:2.4rem;letter-spacing:6px;color:var(--sun)}
+.result .score{font-family:var(--font-display);font-size:1.6rem;margin:6px 0 16px}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+.spin{display:inline-block;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">📚</div>
+    <div>
+      <h1>Mi Libro Mágico</h1>
+      <p>Sube tus PDF o textos y pregunta, juega y aprende con ellos.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <aside class="card" aria-labelledby="lib-h">
+      <h2 id="lib-h">Mis documentos</h2>
+      <label class="drop" id="drop">
+        <strong>Arrastra archivos aquí</strong>
+        <span>o toca para elegir PDF y TXT</span>
+        <input type="file" id="file" accept=".pdf,.txt,.md,text/plain,application/pdf" multiple>
+      </label>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <ul class="docs" id="docs"></ul>
+      <p class="note">Marca los documentos que quieres usar. Los archivos se quedan solo en este navegador. Los PDF escaneados (fotos) no tienen texto y no se pueden leer.</p>
+    </aside>
+
+    <main class="card">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="t-ask" aria-selected="true">💬 Preguntar</button>
+        <button class="tab" role="tab" id="t-quiz" aria-selected="false">🎯 Quiz</button>
+      </div>
+      <div class="row" style="margin-bottom:14px">
+        <label for="age">Edad</label>
+        <select id="age">
+          <option value="5 a 7 años">5 a 7 años</option>
+          <option value="8 a 10 años" selected>8 a 10 años</option>
+          <option value="11 a 13 años">11 a 13 años</option>
+        </select>
+      </div>
+
+      <section id="p-ask">
+        <div class="chips" id="chips"></div>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <form class="ask" id="askForm">
+          <label for="question" style="position:absolute;left:-9999px">Tu pregunta</label>
+          <textarea id="question" rows="2" placeholder="Escribe tu pregunta…"></textarea>
+          <button class="btn" id="askBtn" type="submit">Preguntar</button>
+        </form>
+      </section>
+
+      <section id="p-quiz" hidden>
+        <div id="quizStart">
+          <p style="margin-top:0">Claude inventa preguntas usando solo tus documentos marcados.</p>
+          <div class="row" style="margin-bottom:14px">
+            <label for="qn">Preguntas</label>
+            <select id="qn"><option>3</option><option selected>5</option><option>8</option><option>10</option></select>
+          </div>
+          <button class="btn alt" id="quizBtn" type="button">¡Crear quiz!</button>
+        </div>
+        <div id="quizBox" hidden></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var docs=[], KEY='libro_magico_docs_v1', sample=null, busy=false;
+  var EXAMPLE={id:'ejemplo',name:'Ejemplo: El Sistema Solar',example:true,on:true,text:
+"El Sistema Solar es el grupo de planetas y otros cuerpos que giran alrededor del Sol. El Sol es una estrella enorme que nos da luz y calor. Sin el Sol no habría vida en la Tierra.\n\nHay ocho planetas. De los más cercanos al Sol a los más lejanos son: Mercurio, Venus, la Tierra, Marte, Júpiter, Saturno, Urano y Neptuno. Los cuatro primeros son pequeños y rocosos. Los cuatro últimos son gigantes hechos de gas y hielo.\n\nJúpiter es el planeta más grande. Dentro de él cabrían más de mil Tierras. Saturno es famoso por sus anillos, que están hechos de trocitos de hielo y roca. Marte se llama el planeta rojo porque su suelo tiene mucho óxido de hierro.\n\nLa Tierra es el único planeta donde sabemos que hay vida. Tiene agua líquida, aire para respirar y una temperatura agradable. La Luna es el satélite natural de la Tierra y tarda unos 27 días en darle una vuelta.\n\nVenus es el planeta más caliente, aunque Mercurio esté más cerca del Sol, porque su aire atrapa mucho calor. Neptuno es el planeta más lejano y muy frío."};
+
+  /* ---------- almacenamiento ---------- */
+  function load(){
+    try{var s=localStorage.getItem(KEY);if(s){docs=JSON.parse(s);return}}catch(e){}
+    docs=[EXAMPLE];
+  }
+  function save(){
+    try{localStorage.setItem(KEY,JSON.stringify(docs))}
+    catch(e){setStatus('Este navegador no pudo guardar todos los archivos. Se usarán mientras la página esté abierta.')}
+  }
+  function setStatus(t){$('status').textContent=t||''}
+
+  /* ---------- lectura de archivos ---------- */
+  async function readPdf(file){
+    if(!window.pdfjsLib)throw new Error('No se pudo cargar el lector de PDF.');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise, out=[];
+    for(var i=1;i<=pdf.numPages;i++){
+      var page=await pdf.getPage(i), c=await page.getTextContent();
+      out.push(c.items.map(function(it){return it.str}).join(' '));
+    }
+    return out.join('\n\n');
+  }
+  async function addFiles(list){
+    for(var f of Array.from(list)){
+      setStatus('Leyendo '+f.name+'…');
+      try{
+        var isPdf=/\.pdf$/i.test(f.name)||f.type==='application/pdf';
+        var text=isPdf?await readPdf(f):await f.text();
+        text=text.replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+        if(text.length<20){setStatus(f.name+' no tiene texto que se pueda leer.');continue}
+        docs=docs.filter(function(d){return d.name!==f.name});
+        docs.push({id:'d'+Date.now()+Math.random().toString(36).slice(2,6),name:f.name,on:true,text:text});
+        setStatus('Listo: '+f.name);
+      }catch(e){setStatus('No pude leer '+f.name+'. Prueba con otro archivo.')}
+    }
+    save();renderDocs();
+  }
+
+  /* ---------- lista de documentos ---------- */
+  function renderDocs(){
+    var ul=$('docs');ul.textContent='';
+    if(!docs.length){var li=document.createElement('li');li.className='empty';li.textContent='Aún no hay documentos. Sube el primero.';ul.appendChild(li);}
+    docs.forEach(function(d){
+      var li=document.createElement('li');li.className='doc';
+      var lab=document.createElement('label');
+      var cb=document.createElement('input');cb.type='checkbox';cb.checked=d.on;
+      cb.addEventListener('change',function(){d.on=cb.checked;save();renderChips()});
+      var span=document.createElement('span');span.className='name';span.textContent=d.name;
+      var meta=document.createElement('span');meta.className='meta';
+      meta.textContent=(d.example?'Ejemplo · ':'')+Math.round(d.text.length/5)+' palabras';
+      span.appendChild(meta);lab.appendChild(cb);lab.appendChild(span);
+      var x=document.createElement('button');x.className='x';x.type='button';x.textContent='✕';
+      x.setAttribute('aria-label','Quitar '+d.name);
+      x.addEventListener('click',function(){docs=docs.filter(function(z){return z!==d});save();renderDocs()});
+      li.appendChild(lab);li.appendChild(x);ul.appendChild(li);
+    });
+    renderChips();
+  }
+  function active(){return docs.filter(function(d){return d.on})}
+
+  /* ---------- búsqueda de fragmentos ---------- */
+  var STOP='el la los las un una unos unas de del al y o en a que es son se por con para como cual cuál qué quien quién cuando cuándo donde dónde mas más muy su sus lo le les me mi tu te ya hay ser fue está están tiene tienen'.split(' ');
+  function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+  function tokens(s){return norm(s).split(/[^a-z0-9ñ]+/).filter(function(w){return w.length>2&&STOP.indexOf(w)<0})}
+  function chunks(){
+    var out=[];
+    active().forEach(function(d){
+      var cur='';
+      d.text.split(/\n{2,}/).forEach(function(p){
+        if((cur+p).length>900&&cur){out.push({doc:d.name,text:cur.trim()});cur=''}
+        cur+=p+'\n\n';
+      });
+      if(cur.trim())out.push({doc:d.name,text:cur.trim()});
+    });
+    return out;
+  }
+  function topChunks(q,n){
+    var qt=tokens(q), cs=chunks();
+    cs.forEach(function(c){var ct=norm(c.text);c.score=qt.reduce(function(s,t){return s+(ct.indexOf(t)>=0?1:0)},0)});
+    cs.sort(function(a,b){return b.score-a.score});
+    return cs.slice(0,n);
+  }
+  function context(cs){return cs.map(function(c,i){return '[Fuente '+(i+1)+' — '+c.doc+']\n'+c.text}).join('\n\n')}
+
+  /* ---------- Claude ---------- */
+  function sampleErr(e){
+    if(e&&e.code==='not_granted')return 'Necesitas dar permiso para que Claude pueda responder.';
+    if(e&&e.code==='rate_limited')return 'Hay muchas preguntas seguidas. Espera un momento e inténtalo otra vez.';
+    return 'Algo salió mal. Inténtalo otra vez.';
+  }
+
+  /* ---------- Preguntar ---------- */
+  var SUGG=['¿De qué trata este documento?','Explícame lo más importante','Dame 3 datos curiosos'];
+  function renderChips(){
+    var c=$('chips');c.textContent='';
+    var s=SUGG.slice();
+    if(active().some(function(d){return d.id==='ejemplo'}))s=['¿Cuál es el planeta más grande?','¿Por qué Marte es rojo?'].concat(s.slice(0,1));
+    s.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t;
+      b.addEventListener('click',function(){$('question').value=t;ask()});c.appendChild(b)});
+  }
+  function bubble(cls,text){var m=document.createElement('div');m.className='msg '+cls;m.textContent=text;$('chat').appendChild(m);m.scrollIntoView({block:'nearest'});return m}
+  async function ask(){
+    var q=$('question').value.trim();
+    if(!q||busy)return;
+    if(!active().length){bubble('bot','Marca al menos un documento para que pueda buscar la respuesta.');return}
+    if(!sample){bubble('bot','Esta página necesita abrirse en Claude para poder responder.');return}
+    busy=true;$('askBtn').disabled=true;$('question').value='';
+    bubble('me',q);
+    var cs=topChunks(q,5), m=bubble('bot','Pensando…');
+    var prompt='Eres un tutor amable para niños de '+$('age').value+'. Responde la pregunta usando SOLO la información de las fuentes. '+
+      'Usa palabras sencillas y frases cortas, y un ejemplo si ayuda. Responde en español, máximo 5 frases. '+
+      'Si las fuentes no contienen la respuesta, di con cariño que eso no aparece en los documentos y sugiere otra pregunta. '+
+      'No inventes datos. No uses formato markdown.\n\nFUENTES:\n'+context(cs)+'\n\nPREGUNTA DEL NIÑO: '+q;
+    try{
+      var r=await sample(prompt,{modelTier:'quick',cache:false,onText:function(t){m.textContent=t.text}});
+      m.textContent=r.text.trim();
+      var src=Array.from(new Set(cs.filter(function(c){return c.score>0}).map(function(c){return c.doc})));
+      if(src.length){var sm=document.createElement('small');sm.textContent='Fuente: '+src.join(', ');m.appendChild(sm)}
+    }catch(e){m.textContent=(e&&e.text)||sampleErr(e)}
+    busy=false;$('askBtn').disabled=false;
+  }
+
+  /* ---------- Quiz ---------- */
+  var quiz=null;
+  function pickContext(){
+    var cs=chunks();
+    for(var i=cs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=cs[i];cs[i]=cs[j];cs[j]=t}
+    var out=[],len=0;
+    for(var k=0;k<cs.length&&len<7000;k++){out.push(cs[k]);len+=cs[k].text.length}
+    return context(out);
+  }
+  async function makeQuiz(){
+    if(busy)return;
+    if(!active().length){alert_('Marca al menos un documento.');return}
+    if(!sample){alert_('Esta página necesita abrirse en Claude para crear el quiz.');return}
+    busy=true;$('quizBtn').disabled=true;$('quizBtn').textContent='Creando preguntas…';
+    var n=+$('qn').value;
+    var prompt='Crea un quiz de '+n+' preguntas de opción múltiple para niños de '+$('age').value+', usando SOLO las fuentes. '+
+      'Cada pregunta tiene 4 opciones, solo una correcta, y una explicación corta y amable (1 o 2 frases) en palabras sencillas. '+
+      'Varía qué opción es la correcta. Todo en español. Responde únicamente con JSON de esta forma: '+
+      '{"questions":[{"q":"...","options":["...","...","...","..."],"answer":0,"explanation":"..."}]} donde answer es el índice (0 a 3) de la opción correcta.\n\nFUENTES:\n'+pickContext();
+    try{
+      var r=await sample.json(prompt,{modelTier:'default',cache:false});
+      var qs=(r&&r.questions||[]).filter(function(x){return x&&x.q&&Array.isArray(x.options)&&x.options.length>=2&&Number.isInteger(x.answer)&&x.answer>=0&&x.answer<x.options.length});
+      if(!qs.length)throw new Error('vacío');
+      quiz={qs:qs,i:0,score:0,done:false};
+      $('quizStart').hidden=true;$('quizBox').hidden=false;renderQuiz();
+    }catch(e){alert_((e&&e.code)?sampleErr(e):'No pude crear el quiz. Inténtalo otra vez.')}
+    busy=false;$('quizBtn').disabled=false;$('quizBtn').textContent='¡Crear quiz!';
+  }
+  function alert_(t){setStatus(t)}
+  function renderQuiz(){
+    var box=$('quizBox');box.textContent='';
+    if(quiz.i>=quiz.qs.length){
+      var pct=quiz.score/quiz.qs.length, stars=pct>=.9?3:pct>=.6?2:pct>0?1:0;
+      var r=document.createElement('div');r.className='result';
+      var st=document.createElement('div');st.className='stars';st.textContent='★'.repeat(stars)+'☆'.repeat(3-stars);
+      var sc=document.createElement('div');sc.className='score';sc.textContent=quiz.score+' de '+quiz.qs.length+' correctas';
+      var msg=document.createElement('p');msg.textContent=pct>=.9?'¡Increíble, eres un experto!':pct>=.6?'¡Muy bien! Casi lo sabes todo.':'¡Buen intento! Pregunta lo que no entendiste y prueba de nuevo.';
+      var b=document.createElement('button');b.className='btn alt';b.type='button';b.textContent='Jugar otra vez';
+      b.addEventListener('click',function(){quiz=null;box.hidden=true;$('quizStart').hidden=false});
+      [st,sc,msg,b].forEach(function(e){r.appendChild(e)});box.appendChild(r);return;
+    }
+    var q=quiz.qs[quiz.i];
+    var head=document.createElement('div');head.className='qhead';
+    var a=document.createElement('span');a.textContent='Pregunta '+(quiz.i+1)+' de '+quiz.qs.length;
+    var s=document.createElement('span');s.textContent='⭐ '+quiz.score;
+    head.appendChild(a);head.appendChild(s);
+    var bar=document.createElement('div');bar.className='bar';var bi=document.createElement('i');bi.style.width=(quiz.i/quiz.qs.length*100)+'%';bar.appendChild(bi);
+    var h=document.createElement('p');h.className='q';h.textContent=q.q;
+    var opts=document.createElement('div');opts.className='opts';
+    var fb=document.createElement('div');fb.setAttribute('aria-live','polite');
+    var btns=[];
+    q.options.forEach(function(o,idx){
+      var b=document.createElement('button');b.type='button';b.className='opt';
+      var l=document.createElement('b');l.textContent='ABCD'[idx];
+      var t=document.createElement('span');t.textContent=o;
+      b.appendChild(l);b.appendChild(t);btns.push(b);
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){x.disabled=true});
+        var ok=idx===q.answer;if(ok)quiz.score++;
+        btns[q.answer].classList.add('good');if(!ok)b.classList.add('bad');
+        fb.textContent='';var f=document.createElement('div');f.className='fb';
+        var ft=document.createElement('strong');ft.textContent=ok?'¡Correcto! 🎉':'Casi. La respuesta era '+'ABCD'[q.answer]+'.';
+        var fp=document.createElement('span');fp.textContent=q.explanation||'';
+        f.appendChild(ft);f.appendChild(fp);
+        var nx=document.createElement('button');nx.type='button';nx.className='btn';nx.style.marginTop='12px';
+        nx.textContent=quiz.i+1>=quiz.qs.length?'Ver mi resultado':'Siguiente';
+        nx.addEventListener('click',function(){quiz.i++;renderQuiz()});
+        f.appendChild(document.createElement('br'));f.appendChild(nx);fb.appendChild(f);nx.focus();
+      });
+      opts.appendChild(b);
+    });
+    [head,bar,h,opts,fb].forEach(function(e){box.appendChild(e)});
+  }
+
+  /* ---------- pestañas y eventos ---------- */
+  function tab(which){
+    var ask_=which==='ask';
+    $('p-ask').hidden=!ask_;$('p-quiz').hidden=ask_;
+    $('t-ask').setAttribute('aria-selected',ask_);$('t-quiz').setAttribute('aria-selected',!ask_);
+  }
+  $('t-ask').addEventListener('click',function(){tab('ask')});
+  $('t-quiz').addEventListener('click',function(){tab('quiz')});
+  $('askForm').addEventListener('submit',function(e){e.preventDefault();ask()});
+  $('question').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask()}});
+  $('quizBtn').addEventListener('click',makeQuiz);
+  $('file').addEventListener('change',function(e){addFiles(e.target.files);e.target.value=''});
+  var drop=$('drop');
+  ['dragenter','dragover'].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.add('over')})});
+  ['dragleave','drop'].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.remove('over')})});
+  drop.addEventListener('drop',function(e){if(e.dataTransfer&&e.dataTransfer.files.length)addFiles(e.dataTransfer.files)});
+
+  load();renderDocs();
+  bubble('bot','¡Hola! Pregúntame lo que quieras sobre tus documentos marcados.');
+  if(window.claude&&window.claude.use){
+    window.claude.use('sample').then(function(s){sample=s}).catch(function(){});
+  }
+})();
+</script>
